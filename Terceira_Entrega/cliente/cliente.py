@@ -1,10 +1,14 @@
 import socket
+import os
 
 SERVER_HOST = '127.0.0.1'  # Endereço IP do servidor
 SERVER_PORT = 12347        # Porta do servidor
 CLIENT_PORT = 12348        # Porta do cliente
 BUFFER_SIZE = 1024         # Tamanho do buffer
 TIMEOUT = 2                # Tempo de timeout em segundos
+
+# Mudando o diretório de trabalho para onde os arquivos estão
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # Lista de nomes de arquivos a serem enviados
 filenames = ['mensagem.txt', 'imagem.jpeg']

@@ -1,11 +1,15 @@
 import socket
 import random
+import os
 
 # Configurações do servidor
 HOST = '127.0.0.1'  # Endereço IP do servidor
 PORT = 12347        # Porta do servidor
 BUFFER_SIZE = 1024  # Tamanho do buffer
 TIMEOUT = 2         # Tempo de timeout em segundos
+
+# Mudando o diretório de trabalho para onde os arquivos estão
+os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
 # Criando o socket UDP
 udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -14,7 +18,6 @@ udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 udp_socket.bind((HOST, PORT))
 
 print('Servidor UDP pronto para receber arquivos...')
-
 while True:
     # Recebendo dados e endereço do cliente
     data, addr = udp_socket.recvfrom(BUFFER_SIZE)
@@ -43,3 +46,4 @@ while True:
     # Enviando o conteúdo do arquivo de volta para o cliente com o nome modificado
     udp_socket.sendto(file_data, addr)
     print(f"Arquivo {filename} enviado como {filename_modified} para {addr}")
+    print('Servidor UDP pronto para receber arquivos...')
