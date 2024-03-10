@@ -1,74 +1,63 @@
 import socket
 import random
 import threading
-from rdt import *
-
 
 SERVER_HOST = '127.0.0.1'  # Endereço IP do servidor
-SERVER_PORT = 12347        # Porta do servidor
-CLIENT_PORT = random.randint(10000, 19999)       # Porta do cliente
-BUFFER_SIZE = 1024         # Tamanho do buffer
-TIMEOUT = 2                # Tempo de timeout em segundos
-# Criando o socket UDP
-client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+SERVER_PORT = 12347         # Porta do servidor
+CLIENT_PORT = random.randint(10000, 19999)  # Porta do cliente
+BUFFER_SIZE = 1024          # Tamanho do buffer
+TIMEOUT = 2                 # Tempo de timeout em segundos
 
-# Associa o socket do cliente a uma porta específica
+#print(CLIENT_PORT)
+#print((CLIENT_PORT+1))
+
+# Criando o socket UDP para enviar mensagens
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 client_socket.bind(('0.0.0.0', CLIENT_PORT))
 
-encerramento = threading.Event()      # iniciando o sistemas de threads para receber e enviar msgs
+# Criando o socket UDP para receber ACKs
+recv_ACK_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+recv_ACK_socket.bind(('0.0.0.0', CLIENT_PORT + 1))
+
+encerramento = threading.Event()  # Inicia o sistema de threads para receber e enviar mensagens
 
 def receber_mensagens(socket):
-    while True:
+    while not encerramento.is_set():
         file_data, origem = socket.recvfrom(BUFFER_SIZE)
         resposta = file_data.decode()
         print(resposta)
-        print("Digite seu comando:")
+        addrACK = (origem[0],(origem[1]+1))
+        client_socket.sendto("ACK".encode(), addrACK) 
         if resposta == "Thau":
-            encerramento.set()        # sinaliza que esta thread de recebimento terminou sua execuçao
-            break                     
+            encerramento.set()
+        print("Digite seu comando:")
 
 thread_recebimento = threading.Thread(target=receber_mensagens, args=(client_socket,), daemon=True)
 thread_recebimento.start()
 
+def receber_ack():
+    while not encerramento.is_set():
+        recv_ACK_socket.settimeout(TIMEOUT)
+        try: 
+            ack, _ = recv_ACK_socket.recvfrom(BUFFER_SIZE)
+            if ack.decode() == "ACK":
+                print('Recebi o ACK')
+                return True
+        except socket.timeout:
+            return False
+
+
 print("Digite seu comando:\n")
 while True:
-    message = str(input())
-     # Enviar mensagem com timeout e retry
-    for _ in range(3):  # Número de tentativas
+    message = input()
+    for _ in range(100):  # Número de tentativas
         client_socket.sendto(message.encode(), (SERVER_HOST, SERVER_PORT))
-        client_socket.settimeout(TIMEOUT)
-        try:
-            ack, _ = client_socket.recvfrom(BUFFER_SIZE)
-            if ack.decode() == "ACK":
-                break  # Sai do loop se receber um ACK bem-sucedido
-        except socket.timeout:
-            print("Timeout! Tentando novamente...")
+        if receber_ack():
+            break
 
-    if encerramento.is_set():                #se esta thread de recebimento acabou sua execuçao, nossa thread main também vai                                                                               
+    if encerramento.is_set():  # Se a thread de recebimento terminou, saia do loop
         break
 
-# Fechando o socket
-                                                                                               
+# Fechando os sockets                                                                             
 client_socket.close()
-
-""" def send_with_retransmission(socket, message, server_address, timeout=2):
-    try:
-        # Envia a mensagem
-        socket.sendto(message.encode(), server_address)
-        print("Mensagem enviada, esperando ACK...")
-
-        # Define o timeout para esperar pela resposta (ACK)
-        socket.settimeout(timeout)
-
-        # Tenta receber o ACK
-        while True:
-            try:
-                data, server = socket.recvfrom(1024)
-                ack = data.decode()
-                print("ACK recebido:", ack)
-                break  # Sai do loop após receber ACK
-            except socket.timeout:
-                print("Timeout, retransmitindo...")
-                socket.sendto(message.encode(), server_address)
-    except KeyboardInterrupt:
-        pass """
+recv_ACK_socket.close()
