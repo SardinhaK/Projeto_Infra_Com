@@ -39,6 +39,8 @@ lista_usuarios = []
 print('Servidor UDP pronto para receber arquivos...')
 while True:
     data, addr = udp_socket.recvfrom(BUFFER_SIZE) # recebendo o dado e endereço do cliente que enviou
+    udp_socket.sendto("ACK".encode(), addr)       # Enviar ACK para o cliente
+    frase = []
     frase = data.decode()                         # Hora - 3 char, dia - 3 char, sala - 4char
     frase = frase.strip()
     frase = frase.split(' ')
@@ -46,18 +48,37 @@ while True:
     
     match frase[0].lower():
         case 'connect':
-            print(f'Chegou mais 1 corno: {frase[2]} no IP: {addr}')       # addr = Ip server + porta cliente (unico)
-            menssagem = f'{frase[2]} se conectou'
-            lista_usuarios.append((frase[2] + ' ' + frase[3], addr )) 
-            udp_socket.sendto(menssagem.encode(), addr)
+            if frase[2] and frase[3]:
+                nome_completo = f'{frase[2]} {frase[3]}'
+                print(f'Chegou mais 1 usuário: {nome_completo} no IP: {addr}')
+
+                mensagem_conexao = 'Você se conectou!'
+                udp_socket.sendto(mensagem_conexao.encode(), addr)
+                lista_usuarios.append((nome_completo, addr))
+                
+                # Enviar mensagem para todos os outros clientes
+                for tupla in lista_usuarios:
+                    if tupla[1] != addr:
+                        mensagem = f'{nome_completo} acabou de se conectar ao servidor'
+                        udp_socket.sendto(mensagem.encode(), tupla[1])
+
+            else:
+                mensagem_erro = 'O comando connect precisa ter um nome composto de 2 palavras. Ex: \'connect as Pedro Miguel\''
+                udp_socket.sendto(mensagem_erro.encode(), addr)
 
         case 'bye':
-            print("Adeus Imundice")
             menssagem = 'Thau'
             for tupla in lista_usuarios[:]:  # Usando uma cópia da lista para evitar problemas de iteração
                 if addr in tupla:
                     lista_usuarios.remove(tupla)
+                    nome_completo = tupla[0]
+                    print(f"Adeus Imundice {tupla[0]}")
             udp_socket.sendto(menssagem.encode(), addr)
+            # Enviar mensagem para todos os outros clientes
+            for tupla in lista_usuarios:
+                if tupla[1] != addr:
+                    mensagem = f'{nome_completo} acabou de se desconectar do servidor'
+                    udp_socket.sendto(mensagem.encode(), tupla[1])
 
         case 'list':
             print("Toma a lista")
@@ -69,14 +90,20 @@ while True:
             if frase[1] != None and frase[2] != None and frase[3] != None:
                 for tupla in lista_usuarios[:]:  # Usando uma cópia da lista para evitar problemas de iteração
                     if addr in tupla:
+                        nome_completo = tupla[0]
                         flag = 1
-                        salaDesejada = nome_salas.index(frase[1].upper	())
+                        salaDesejada = nome_salas.index(frase[1].upper())
                         diaDesejado = nome_dias.index(frase[2].lower())
                         horarioDesejado = nome_horarios.index(frase[3].lower())
                         if matriz_ocupacao[salaDesejada][diaDesejado][horarioDesejado] == None:
                             menssagem = 'Sala Reservada'
                             udp_socket.sendto(menssagem.encode(), addr)
                             matriz_ocupacao[salaDesejada][diaDesejado][horarioDesejado] = tupla
+                            # Enviar mensagem para todos os outros clientes
+                            for tuplas in lista_usuarios:
+                                if tuplas[1] != addr:
+                                    mensagem = f'{nome_completo} acabou de reservar a sala: {frase[1]} no dia {frase[2]} as {frase[3]}'
+                                    udp_socket.sendto(mensagem.encode(), tuplas[1])
                         else:
                             menssagem = f'Essa sala já foi reservada por {(matriz_ocupacao[salaDesejada][diaDesejado][horarioDesejado])[0]}'
                             udp_socket.sendto(menssagem.encode(), addr)
@@ -95,13 +122,18 @@ while True:
                 for tupla in lista_usuarios[:]:  
                     if addr in tupla:
                         flag = 1
-                        salaDesejada = nome_salas.index(frase[1])
-                        diaDesejado = nome_dias.index(frase[2])
-                        horarioDesejado = nome_horarios.index(frase[3])
+                        nome_completo = tupla[0]
+                        salaDesejada = nome_salas.index(frase[1].upper())
+                        diaDesejado = nome_dias.index(frase[2].lower())
+                        horarioDesejado = nome_horarios.index(frase[3].lower())
                         if matriz_ocupacao[salaDesejada][diaDesejado][horarioDesejado] == tupla:
                             menssagem = 'Reserva cancelada'
                             udp_socket.sendto(menssagem.encode(), addr)
                             matriz_ocupacao[salaDesejada][diaDesejado][horarioDesejado] = None
+                            for tuplas in lista_usuarios:
+                                if tuplas[1] != addr:
+                                    mensagem = f'{nome_completo} acabou de cancelar a reserva da sala: {frase[1]} no dia {frase[2]} as {frase[3]}'
+                                    udp_socket.sendto(mensagem.encode(), tuplas[1])
                         else:
                             menssagem = f'Você não reservou essa sala!'
                             udp_socket.sendto(menssagem.encode(), addr)
@@ -120,8 +152,8 @@ while True:
                 for tupla in lista_usuarios[:]:  
                     if addr in tupla:
                         flag = 1
-                        salaDesejada = nome_salas.index(frase[1])
-                        diaDesejado = nome_dias.index(frase[2])
+                        salaDesejada = nome_salas.index(frase[1].upper())
+                        diaDesejado = nome_dias.index(frase[2].lower())
                         for i in range(num_horarios):
                             if matriz_ocupacao[salaDesejada][diaDesejado][i] == None:
                                 lista_disponivel.append(nome_horarios[i])
