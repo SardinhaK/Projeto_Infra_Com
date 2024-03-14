@@ -125,7 +125,7 @@ while True:
 
         case 'reservar':
             flag = 0
-            if (frase[1] != None and frase[2] != None and frase[3] != None and frase[1] in nome_salas and frase[2] in nome_dias and frase[3] in nome_horarios):
+            if (frase[1] != None and frase[2] != None and frase[3] != None and frase[1].upper() in nome_salas and frase[2].lower() in nome_dias and frase[3].lower() in nome_horarios):
                 for tupla in lista_usuarios[:]:  # Usando uma cópia da lista para evitar problemas de iteração
                     if addr in tupla:
                         nome_completo = tupla[0]
@@ -171,7 +171,7 @@ while True:
 
         case 'cancelar':
             flag = 0
-            if frase[1] != None and frase[2] != None and frase[3] != None  and frase[1] in nome_salas and frase[2] in nome_dias and frase[3] in nome_horarios:
+            if frase[1] != None and frase[2] != None and frase[3] != None  and frase[1].upper() in nome_salas and frase[2].lower() in nome_dias and frase[3].lower() in nome_horarios:
                 for tupla in lista_usuarios[:]:  
                     if addr in tupla:
                         flag = 1
@@ -217,7 +217,7 @@ while True:
         case 'check':
             lista_disponivel = []
             flag = 0
-            if frase[1] != None and frase[2] != None and frase[1] in nome_salas and frase[2] in nome_dias:
+            if frase[1] != None and frase[2] != None and frase[1].upper() in nome_salas and frase[2].lower() in nome_dias:
                 for tupla in lista_usuarios[:]:  
                     if addr in tupla:
                         flag = 1
