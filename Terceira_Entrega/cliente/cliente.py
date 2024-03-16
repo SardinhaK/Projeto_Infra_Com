@@ -41,7 +41,7 @@ def receber_ack():
         try: 
             ack, _ = recv_ACK_socket.recvfrom(BUFFER_SIZE)
             if ack.decode() == "ACK":
-                print('Recebi o ACK')
+                #print('Recebi o ACK')
                 return True
         except socket.timeout:
             return False

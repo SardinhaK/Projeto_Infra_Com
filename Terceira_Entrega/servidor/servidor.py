@@ -261,6 +261,3 @@ while True:
                 if receber_ack():
                     break
             
-
-
-
